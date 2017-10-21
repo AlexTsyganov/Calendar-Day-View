@@ -23,12 +23,19 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<IPopup> popups;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         dayView = (CalendarDayView) findViewById(R.id.calendar);
-        dayView.setLimitTime(9, 22);
+        dayView.setLimitTime(0, 23);
+
+        dayView.setTimeLineLongClickListener(new CalendarDayView.OnTimeLineLongClickListener() {
+            @Override
+            public void timeLineSelect(Calendar start) {
+                Log.d("", start.getTime().toString());
+            }
+        });
 
         ((CdvDecorationDefault) (dayView.getDecoration())).setOnEventClickListener(
             new EventView.OnEventClickListener() {

@@ -4,8 +4,12 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import com.framgia.library.calendardayview.data.IEvent;
@@ -14,8 +18,11 @@ import com.framgia.library.calendardayview.data.ITimeDuration;
 import com.framgia.library.calendardayview.decoration.CdvDecoration;
 import com.framgia.library.calendardayview.decoration.CdvDecorationDefault;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 /**
  * Created by FRAMGIA\pham.van.khac on 07/07/2016.
@@ -47,6 +54,8 @@ public class CalendarDayView extends FrameLayout {
     private List<? extends IEvent> mEvents;
 
     private List<? extends IPopup> mPopups;
+
+    private OnTimeLineLongClickListener timeLineLongClickListener;
 
     public CalendarDayView(Context context) {
         super(context);
@@ -92,6 +101,7 @@ public class CalendarDayView extends FrameLayout {
         mDecoration = new CdvDecorationDefault(getContext());
 
         refresh();
+        setupCustomLongClickListener();
     }
 
     public void refresh() {
@@ -144,6 +154,42 @@ public class CalendarDayView extends FrameLayout {
         }
     }
 
+    private void setupCustomLongClickListener() {
+        final List<Float> y = new ArrayList<>();
+        mLayoutDayView.setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    y.clear();
+                    y.add(event.getY());
+                }
+                return false;
+            }
+        });
+        mLayoutDayView.setOnLongClickListener(new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if (timeLineLongClickListener != null && y.size() == 1) {
+                    timeLineLongClickListener.timeLineSelect(getTimeLine(y.get(0)));
+                    return true;
+                }
+                return false;
+            }
+        });
+    }
+
+    private Calendar getTimeLine(float y) {
+        Calendar calendar = Calendar.getInstance();
+        float d = 120 * (y - mTimeHeight / 2 - mSeparateHourHeight) / (mDayHeight + mDayHeight) + 60*mStartHour;
+        int minute = (int) (d % 60);
+        int hour = (int) (d / 60);
+        calendar.set(Calendar.HOUR_OF_DAY, hour);
+        calendar.set(Calendar.MINUTE, minute);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar;
+    }
+
     private Rect getTimeBound(ITimeDuration event) {
         Rect rect = new Rect();
         rect.top = getPositionOfTime(event.getStartTime()) + mTimeHeight / 2 + mSeparateHourHeight;
@@ -169,6 +215,10 @@ public class CalendarDayView extends FrameLayout {
         refresh();
     }
 
+    public void setTimeLineLongClickListener(OnTimeLineLongClickListener timeLineLongClickListener) {
+        this.timeLineLongClickListener = timeLineLongClickListener;
+    }
+
     public void setLimitTime(int startHour, int endHour) {
         if (startHour >= endHour) {
             throw new IllegalArgumentException("start hour must before end hour");
@@ -188,5 +238,9 @@ public class CalendarDayView extends FrameLayout {
 
     public CdvDecoration getDecoration() {
         return mDecoration;
+    }
+
+    public interface OnTimeLineLongClickListener {
+        void timeLineSelect(Calendar start);
     }
 }
